@@ -141,12 +141,12 @@ export default defineConfig({
       // schemaPath: "https://gw.alipayobjects.com/os/antfincdn/M%24jrzTTYJN/oneapi.json"
       // schemaPath: join(__dirname, 'oneapi.json'),
       schemaPath: "http://192.168.123.168:8080/v3/api-docs",
+      projectName: 'api-scheduler',
       mock: false,
     },
     {
       requestLibPath: "import { request } from '@umijs/max'",
-      schemaPath: 'https://gw.alipayobjects.com/os/antfincdn/CA1dOm%2631B/openapi.json',
-      projectName: 'swagger',
+      schemaPath: join(__dirname, 'oneapi.json')
     },
   ],
   mfsu: {

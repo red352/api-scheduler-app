@@ -52,6 +52,18 @@ export default [
     component: './TableList',
   },
   {
+    name: 'Api列表',
+    icon: 'table',
+    path: '/apiList',
+    component: './ApiList',
+  },
+  {
+    name: '调度列表',
+    icon: 'table',
+    path: '/triggerList',
+    component: './TriggerList',
+  },
+  {
     path: '/',
     redirect: '/welcome',
   },

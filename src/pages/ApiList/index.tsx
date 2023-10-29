@@ -1,4 +1,5 @@
 import { addRule, removeRule, rule, updateRule } from '@/services/ant-design-pro/rule';
+import { listApi } from '@/services/api-scheduler/apiController'
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
 import {
@@ -13,8 +14,9 @@ import {
 import { FormattedMessage, useIntl } from '@umijs/max';
 import { Button, Drawer, Input, message } from 'antd';
 import React, { useRef, useState } from 'react';
-import type { FormValueType } from './components/UpdateForm';
-import UpdateForm from './components/UpdateForm';
+import type { FormValueType } from '../TableList/components/UpdateForm';
+import UpdateForm from '../TableList/components/UpdateForm';
+import { json } from 'express';
 
 /**
  * @en-US Add node
@@ -107,16 +109,10 @@ const TableList: React.FC = () => {
    * */
   const intl = useIntl();
 
-  const columns: ProColumns<API.RuleListItem>[] = [
+  const columns: ProColumns<API.Api>[] = [
     {
-      title: (
-        <FormattedMessage
-          id="pages.searchTable.updateForm.ruleName.nameLabel"
-          defaultMessage="Rule name"
-        />
-      ),
+      title: "接口名称",
       dataIndex: 'name',
-      tip: 'The rule name is the unique key',
       render: (dom, entity) => {
         return (
           <a
@@ -131,72 +127,57 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: <FormattedMessage id="pages.searchTable.titleDesc" defaultMessage="Description" />,
-      dataIndex: 'desc',
+      title: "请求地址",
+      dataIndex: 'url',
       valueType: 'textarea',
     },
     {
-      title: (
-        <FormattedMessage
-          id="pages.searchTable.titleCallNo"
-          defaultMessage="Number of service calls"
-        />
-      ),
-      dataIndex: 'callNo',
-      sorter: true,
-      hideInForm: true,
-      renderText: (val: string) =>
-        `${val}${intl.formatMessage({
-          id: 'pages.searchTable.tenThousand',
-          defaultMessage: ' 万 ',
-        })}`,
-    },
-    {
-      title: <FormattedMessage id="pages.searchTable.titleStatus" defaultMessage="Status" />,
-      dataIndex: 'status',
-      hideInForm: true,
-      valueEnum: {
-        0: {
-          text: (
-            <FormattedMessage
-              id="pages.searchTable.nameStatus.default"
-              defaultMessage="Shut down"
-            />
-          ),
-          status: 'Default',
-        },
-        1: {
-          text: (
-            <FormattedMessage id="pages.searchTable.nameStatus.running" defaultMessage="Running" />
-          ),
-          status: 'Processing',
-        },
-        2: {
-          text: (
-            <FormattedMessage id="pages.searchTable.nameStatus.online" defaultMessage="Online" />
-          ),
-          status: 'Success',
-        },
-        3: {
-          text: (
-            <FormattedMessage
-              id="pages.searchTable.nameStatus.abnormal"
-              defaultMessage="Abnormal"
-            />
-          ),
-          status: 'Error',
-        },
+      title: "请求参数",
+      dataIndex: 'params',
+      renderText: (val: string) => {
+        if (val) {
+          const obj = JSON.parse(val);
+          return JSON.stringify(obj.params)
+        }
+        return '-';
       },
     },
     {
-      title: (
-        <FormattedMessage
-          id="pages.searchTable.titleUpdatedAt"
-          defaultMessage="Last scheduled time"
-        />
-      ),
+      title: "请求方法",
+      dataIndex: 'method'
+    },
+    {
+      title: "请求体",
+      dataIndex: 'body',
+      hideInTable: true,
+    },
+    {
+      title: "请求头",
+      dataIndex: 'headers',
+      renderText: (val: string) => {
+        if (val) {
+          const obj = JSON.parse(val);
+          return JSON.stringify(obj.headers)
+        }
+        return '-';
+      },
+      hideInTable: true,
+    },
+    {
+      title: "响应类型",
+      dataIndex: 'responseType',
+      hideInForm: true,
+      valueEnum: {
+        0: {
+          text: "text",
+          status: 'Default',
+        }
+      },
+    },
+    {
+      title: "创建时间",
       sorter: true,
-      dataIndex: 'updatedAt',
+      dataIndex: 'createTime',
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
         const status = form.getFieldValue('status');
@@ -243,7 +224,7 @@ const TableList: React.FC = () => {
 
   return (
     <PageContainer>
-      <ProTable<API.RuleListItem, API.PageParams>
+      <ProTable<API.Api, API.PageParams>
         headerTitle={intl.formatMessage({
           id: 'pages.searchTable.title',
           defaultMessage: 'Enquiry form',
@@ -264,7 +245,30 @@ const TableList: React.FC = () => {
             <PlusOutlined /> <FormattedMessage id="pages.searchTable.new" defaultMessage="New" />
           </Button>,
         ]}
-        request={rule}
+        request={async (
+
+        ) => {
+          const msg = await listApi(
+            {
+              name: "",
+              url: "",
+              startTime: "",
+              endTime: "",
+              requestPage: {
+                pageNum: 1,
+                pageSize: 20
+              },
+            } as API.QueryApi
+          );
+          return {
+            data: msg.data?.content,
+            // success 请返回 true，
+            // 不然 table 会停止解析数据，即使有数据
+            success: true,
+            // 不传会使用 data 的长度，如果是分页一定要传
+            total: msg.data?.totalElements,
+          };
+        }}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => {
@@ -377,8 +381,8 @@ const TableList: React.FC = () => {
         closable={false}
       >
         {currentRow?.name && (
-          <ProDescriptions<API.RuleListItem>
-            column={2}
+          <ProDescriptions<API.Api>
+            column={1}
             title={currentRow?.name}
             request={async () => ({
               data: currentRow || {},
@@ -386,7 +390,7 @@ const TableList: React.FC = () => {
             params={{
               id: currentRow?.name,
             }}
-            columns={columns as ProDescriptionsItemProps<API.RuleListItem>[]}
+            columns={columns as ProDescriptionsItemProps<API.Api>[]}
           />
         )}
       </Drawer>
